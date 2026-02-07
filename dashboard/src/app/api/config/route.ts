@@ -7,6 +7,10 @@ export const dynamic = "force-dynamic";
 interface OpenClawConfig {
   agents?: {
     defaults?: {
+      model?: {
+        primary?: string;
+        fallbacks?: string[];
+      };
       heartbeat?: {
         model?: string;
       };
@@ -25,6 +29,11 @@ export async function GET() {
     const content = readFileSync(configPath, "utf-8");
     const config: OpenClawConfig = JSON.parse(content);
 
+    // Extract default model
+    const defaultModel = config.agents?.defaults?.model?.primary || "unknown";
+    const { modelId: defaultModelName, provider: defaultProvider } =
+      parseModel(defaultModel);
+
     // Extract heartbeat model
     const heartbeatModel = config.agents?.defaults?.heartbeat?.model || "unknown";
 
@@ -32,6 +41,9 @@ export async function GET() {
     const { modelId, provider } = parseModel(heartbeatModel);
 
     return NextResponse.json({
+      defaultModel,
+      defaultModelName,
+      defaultProvider,
       heartbeatModel,
       heartbeatModelName: modelId,
       heartbeatProvider: provider,
@@ -42,6 +54,9 @@ export async function GET() {
 
     return NextResponse.json(
       {
+        defaultModel: "unknown",
+        defaultModelName: "Unknown",
+        defaultProvider: "Unknown",
         heartbeatModel: "unknown",
         heartbeatModelName: "Unknown",
         heartbeatProvider: "Unknown",

@@ -8,6 +8,9 @@ interface HealthData {
 }
 
 interface ConfigData {
+  defaultModel: string;
+  defaultModelName: string;
+  defaultProvider: string;
   heartbeatModel: string;
   heartbeatModelName: string;
   heartbeatProvider: string;
@@ -28,6 +31,9 @@ export function StatusCards({ openClawUrl }: { openClawUrl: string }) {
       .then(setConfig)
       .catch(() =>
         setConfig({
+          defaultModel: "unknown",
+          defaultModelName: "Unknown",
+          defaultProvider: "Unknown",
           heartbeatModel: "unknown",
           heartbeatModelName: "Unknown",
           heartbeatProvider: "Unknown",
@@ -82,9 +88,11 @@ export function StatusCards({ openClawUrl }: { openClawUrl: string }) {
       {/* Model Info */}
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
         <p className="text-sm text-[var(--muted)]">Default Model</p>
-        <p className="mt-2 text-lg font-semibold text-white">Haiku 4.5</p>
+        <p className="mt-2 text-lg font-semibold text-white">
+          {config ? config.defaultModelName : "Loading..."}
+        </p>
         <p className="mt-1 text-xs text-[var(--muted)]">
-          Sonnet available on demand
+          {config ? config.defaultProvider : "Loading..."} model
         </p>
       </div>
 
