@@ -30,3 +30,6 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+
+# OpenClaw workspace
+openclaw/workspace/
