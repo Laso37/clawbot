@@ -1,0 +1,47 @@
+# =============================================================================
+# Traefik Static Configuration
+# =============================================================================
+
+# --- API / Dashboard ---
+api:
+  dashboard: false
+
+# --- Entrypoints ---
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+  websecure:
+    address: ":443"
+    http:
+      tls:
+        certResolver: letsencrypt
+
+# --- Certificate Resolvers ---
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+
+# --- Providers ---
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: clawbot_clawbot_net
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+# --- Logging ---
+log:
+  level: WARN
+accessLog:
+  filePath: /var/log/traefik/access.log
+  bufferingSize: 100

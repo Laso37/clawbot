@@ -1,0 +1,68 @@
+# =============================================================================
+# Traefik Dynamic Configuration — Middlewares
+# =============================================================================
+
+http:
+  middlewares:
+    # --- Authelia ForwardAuth ---
+    authelia:
+      forwardAuth:
+        address: "http://authelia:9091/authelia/api/authz/forward-auth"
+        trustForwardHeader: true
+        authResponseHeaders:
+          - "Remote-User"
+          - "Remote-Groups"
+          - "Remote-Name"
+          - "Remote-Email"
+
+    # --- Anti-bot headers ---
+    noindex-headers:
+      headers:
+        customResponseHeaders:
+          X-Robots-Tag: "noindex, nofollow, noarchive, nosnippet"
+          X-Content-Type-Options: "nosniff"
+          X-Frame-Options: "SAMEORIGIN"
+          Referrer-Policy: "strict-origin-when-cross-origin"
+          Permissions-Policy: "camera=(), microphone=(), geolocation=()"
+
+    # --- Security headers ---
+    security-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        contentTypeNosniff: true
+        browserXssFilter: true
+
+    # --- Rate limiting ---
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 50
+        period: 1m
+
+    # --- Strip /openclaw prefix ---
+    openclaw-strip:
+      stripPrefix:
+        prefixes:
+          - "/openclaw"
+
+    # --- Combined default chain ---
+    default-chain:
+      chain:
+        middlewares:
+          - noindex-headers
+          - security-headers
+          - rate-limit
+          - authelia
+
+    # --- OpenClaw chain (auth + strip prefix) ---
+    openclaw-chain:
+      chain:
+        middlewares:
+          - noindex-headers
+          - security-headers
+          - rate-limit
+          - authelia
+          - openclaw-strip

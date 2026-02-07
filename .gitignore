@@ -1,0 +1,32 @@
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Authelia secrets
+authelia/secrets/
+authelia/users.yml
+
+# Data directories (persistent volumes on host)
+data/
+
+# Node modules
+node_modules/
+dashboard/node_modules/
+dashboard/.next/
+dashboard/out/
+
+# Docker build artifacts
+*.tar
+*.log
+
+# PDFs (keep markdown versions only)
+*.pdf
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
