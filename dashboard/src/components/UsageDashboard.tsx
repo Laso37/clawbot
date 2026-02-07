@@ -30,20 +30,6 @@ interface UsageData {
   totalMessages: number;
   byModel: Record<string, { cost: number; tokens: number; messages: number }>;
   period: { start: string; end: string };
-  metrics: {
-    costPerToken: number;
-    costPerMessage: number;
-    tokensPerMessage: number;
-    avgDailyCost: number;
-    daysRemainingInMonth: number;
-  };
-  messageBreakdown: {
-    user: number;
-    assistant: number;
-    toolCalls: number;
-    toolResults: number;
-    errors: number;
-  };
 }
 
 const COLORS = {
@@ -183,91 +169,6 @@ export function UsageDashboard() {
         </div>
       </div>
 
-      {/* Efficiency Metrics */}
-      {data && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <MetricCard
-            label="Cost per Token"
-            value={`$${data.metrics.costPerToken.toFixed(6)}`}
-            subtext="Lower is better"
-          />
-          <MetricCard
-            label="Cost per Message"
-            value={`$${data.metrics.costPerMessage.toFixed(4)}`}
-            subtext="Session metric"
-          />
-          <MetricCard
-            label="Avg Tokens/Message"
-            value={formatTokens(data.metrics.tokensPerMessage)}
-            subtext="Chat efficiency"
-          />
-          <MetricCard
-            label="Daily Average"
-            value={formatCost(data.metrics.avgDailyCost)}
-            subtext={`${data.metrics.daysRemainingInMonth} days left in month`}
-          />
-        </div>
-      )}
-
-      {/* Message Type Breakdown */}
-      {data && data.messageBreakdown && (
-        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
-          <h3 className="mb-4 text-sm font-medium text-[var(--muted)]">
-            Message Breakdown
-          </h3>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-            <div>
-              <p className="text-xs text-[var(--muted)]">User Messages</p>
-              <p className="mt-1 text-lg font-semibold text-white">
-                {data.messageBreakdown.user.toLocaleString()}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-[var(--muted)]">Assistant Messages</p>
-              <p className="mt-1 text-lg font-semibold text-white">
-                {data.messageBreakdown.assistant.toLocaleString()}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-[var(--muted)]">Tool Calls</p>
-              <p className="mt-1 text-lg font-semibold text-white">
-                {data.messageBreakdown.toolCalls.toLocaleString()}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-[var(--muted)]">Tool Results</p>
-              <p className="mt-1 text-lg font-semibold text-white">
-                {data.messageBreakdown.toolResults.toLocaleString()}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-[var(--muted)]">Errors</p>
-              <p className="mt-1 text-lg font-semibold text-white">
-                {data.messageBreakdown.errors.toLocaleString()}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Budget Status */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <BudgetCard
-          label="Daily Budget"
-          spent={data?.days[data.days.length - 1]?.totalCost || 0}
-          limit={5}
-          avgDaily={data?.metrics.avgDailyCost || 0}
-        />
-        <BudgetCard
-          label="Monthly Budget"
-          spent={data?.totalCost || 0}
-          limit={200}
-          projectedMonthly={
-            data ? data.totalCost + data.metrics.avgDailyCost * data.metrics.daysRemainingInMonth : 0
-          }
-        />
-      </div>
-
       {/* Model Breakdown Table */}
       {data && Object.keys(data.byModel).length > 0 && (
         <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
@@ -327,14 +228,10 @@ function BudgetCard({
   label,
   spent,
   limit,
-  avgDaily,
-  projectedMonthly,
 }: {
   label: string;
   spent: number;
   limit: number;
-  avgDaily?: number;
-  projectedMonthly?: number;
 }) {
   const pct = Math.min((spent / limit) * 100, 100);
   const color =
@@ -363,34 +260,6 @@ function BudgetCard({
         {pct >= 75 && pct < 90 && " ⚠️ Approaching limit"}
         {pct >= 90 && " 🚨 Near limit!"}
       </p>
-      {avgDaily !== undefined && (
-        <p className="mt-1 text-xs text-[var(--muted)]">
-          Average: ${avgDaily.toFixed(2)}/day
-        </p>
-      )}
-      {projectedMonthly !== undefined && (
-        <p className="mt-1 text-xs text-[var(--muted)]">
-          Projected: ${projectedMonthly.toFixed(2)}/month
-        </p>
-      )}
-    </div>
-  );
-}
-
-function MetricCard({
-  label,
-  value,
-  subtext,
-}: {
-  label: string;
-  value: string;
-  subtext: string;
-}) {
-  return (
-    <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4">
-      <p className="text-xs text-[var(--muted)]">{label}</p>
-      <p className="mt-2 text-lg font-semibold text-white">{value}</p>
-      <p className="mt-1 text-xs text-[var(--muted)]">{subtext}</p>
     </div>
   );
 }

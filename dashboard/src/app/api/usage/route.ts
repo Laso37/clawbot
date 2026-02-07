@@ -19,20 +19,6 @@ interface UsageResponse {
   totalMessages: number;
   byModel: Record<string, { cost: number; tokens: number; messages: number }>;
   period: { start: string; end: string };
-  metrics: {
-    costPerToken: number;
-    costPerMessage: number;
-    tokensPerMessage: number;
-    avgDailyCost: number;
-    daysRemainingInMonth: number;
-  };
-  messageBreakdown: {
-    user: number;
-    assistant: number;
-    toolCalls: number;
-    toolResults: number;
-    errors: number;
-  };
 }
 
 // OpenClaw sessions.usage RPC response shape
@@ -195,43 +181,15 @@ function normalizeUsageResponse(
     };
   }
 
-  const totalCost = data.totals?.totalCost || 0;
-  const totalTokens = data.totals?.totalTokens || 0;
-  const totalMessages = data.aggregates?.messages?.total || 0;
-
-  // Calculate efficiency metrics
-  const daysInPeriod = daysList.length;
-  const avgDailyCost = daysInPeriod > 0 ? totalCost / daysInPeriod : 0;
-  const now = new Date();
-  const daysRemainingInMonth = new Date(
-    now.getFullYear(),
-    now.getMonth() + 1,
-    0
-  ).getDate() - now.getDate();
-
   return {
     days: daysList,
-    totalCost,
-    totalTokens,
-    totalMessages,
+    totalCost: data.totals?.totalCost || 0,
+    totalTokens: data.totals?.totalTokens || 0,
+    totalMessages: data.aggregates?.messages?.total || 0,
     byModel: modelBreakdown,
     period: {
       start: startDate.toISOString(),
       end: endDate.toISOString(),
-    },
-    metrics: {
-      costPerToken: totalTokens > 0 ? totalCost / totalTokens : 0,
-      costPerMessage: totalMessages > 0 ? totalCost / totalMessages : 0,
-      tokensPerMessage: totalMessages > 0 ? totalTokens / totalMessages : 0,
-      avgDailyCost,
-      daysRemainingInMonth,
-    },
-    messageBreakdown: {
-      user: data.aggregates?.messages?.user || 0,
-      assistant: data.aggregates?.messages?.assistant || 0,
-      toolCalls: data.aggregates?.messages?.toolCalls || 0,
-      toolResults: data.aggregates?.messages?.toolResults || 0,
-      errors: data.aggregates?.messages?.errors || 0,
     },
   };
 }
@@ -264,24 +222,6 @@ function buildEmptyResponse(days: number): UsageResponse {
     period: {
       start: daysList[0].date,
       end: daysList[daysList.length - 1].date,
-    },
-    metrics: {
-      costPerToken: 0,
-      costPerMessage: 0,
-      tokensPerMessage: 0,
-      avgDailyCost: 0,
-      daysRemainingInMonth: new Date(
-        now.getFullYear(),
-        now.getMonth() + 1,
-        0
-      ).getDate() - now.getDate(),
-    },
-    messageBreakdown: {
-      user: 0,
-      assistant: 0,
-      toolCalls: 0,
-      toolResults: 0,
-      errors: 0,
     },
   };
 }
