@@ -7,14 +7,32 @@ interface HealthData {
   version?: string;
 }
 
+interface ConfigData {
+  heartbeatModel: string;
+  heartbeatModelName: string;
+  heartbeatProvider: string;
+}
+
 export function StatusCards({ openClawUrl }: { openClawUrl: string }) {
   const [health, setHealth] = useState<HealthData | null>(null);
+  const [config, setConfig] = useState<ConfigData | null>(null);
 
   useEffect(() => {
     fetch("/api/health")
       .then((r) => r.json())
       .then(setHealth)
       .catch(() => setHealth({ openclaw: "offline" }));
+
+    fetch("/api/config")
+      .then((r) => r.json())
+      .then(setConfig)
+      .catch(() =>
+        setConfig({
+          heartbeatModel: "unknown",
+          heartbeatModelName: "Unknown",
+          heartbeatProvider: "Unknown",
+        })
+      );
   }, []);
 
   const statusColor = {
@@ -73,9 +91,11 @@ export function StatusCards({ openClawUrl }: { openClawUrl: string }) {
       {/* Heartbeat */}
       <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
         <p className="text-sm text-[var(--muted)]">Heartbeat</p>
-        <p className="mt-2 text-lg font-semibold text-white">Ollama Local</p>
+        <p className="mt-2 text-lg font-semibold text-white">
+          {config ? config.heartbeatProvider : "Loading..."} Local
+        </p>
         <p className="mt-1 text-xs text-[var(--muted)]">
-          llama3.2:3b · $0/month
+          {config ? config.heartbeatModelName : "Loading..."}
         </p>
       </div>
     </div>
