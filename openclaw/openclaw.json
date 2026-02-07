@@ -15,11 +15,15 @@
         "ollama/llama3.2:3b": {
           "alias": "local",
           "streaming": false
+        },
+        "ollama/tinyllama:1.1b": {
+          "alias": "tinyllama",
+          "streaming": false
         }
       },
       "heartbeat": {
         "every": "1h",
-        "model": "ollama/llama3.2:3b",
+        "model": "ollama/tinyllama:1.1b",
         "ackMaxChars": 300,
         "includeReasoning": false
       },
@@ -48,6 +52,15 @@
             "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
             "contextWindow": 128000,
             "maxTokens": 8192
+          },
+          {
+            "id": "tinyllama:1.1b",
+            "name": "TinyLLama 1.1B",
+            "reasoning": false,
+            "input": ["text"],
+            "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 },
+            "contextWindow": 2048,
+            "maxTokens": 512
           }
         ]
       }

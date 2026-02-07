@@ -46,7 +46,7 @@ Internet
 │  All routes pass through Authelia ForwardAuth first   │
 └───────────────────────────────────────────────────────┘
          │
-         ├── Ollama (llama3.2:3b) — free local heartbeats
+         ├── Ollama (tinyllama:1.1b) — free local heartbeats
          └── Persistent volumes at /opt/openclaw/
 ```
 
@@ -70,10 +70,22 @@ All 6 recommendations from the [OpenClaw Token Optimization Guide](docs/OpenClaw
 |---|---|---|---|
 | 1 | **Session Init** | Load only `SOUL.md` + `USER.md` (~8KB vs 50KB) | 8× cheaper sessions |
 | 2 | **Model Routing** | Haiku 4.5 default, Sonnet only when needed | 10–15× cheaper per token |
-| 3 | **Heartbeat → Ollama** | Local `llama3.2:3b` instead of paid API | $0/mo vs $5–15/mo |
+| 3 | **Heartbeat → Ollama** | Local model (default: `tinyllama:1.1b`) instead of paid API | $0/mo vs $5–15/mo |
 | 4 | **Rate Limits** | 5s between calls, 10s between searches | Prevents runaway spend |
 | 5 | **Budget Controls** | $5/day hard cap, $200/month, 75% warnings | No surprise bills |
 | 6 | **Prompt Caching** | `cache-ttl` mode, 5min TTL, auto for Anthropic | 90% discount on cached tokens |
+
+### Heartbeat Model Options
+
+The default heartbeat model can be changed in `openclaw/openclaw.json` (key: `agents.defaults.heartbeat.model`). Choose based on your VPS memory constraint:
+
+| Model | RAM Usage | File Size | Best For | Speed |
+|---|---|---|---|---|
+| `ollama/tinyllama:1.1b` | **~80 MB** (idle), **~500 MB** (active) | 637 MB | **Default** — memory-constrained VPS, sufficient for heartbeat pings | ⚡ Fast |
+| `ollama/llama3.2:3b` | ~150 MB (idle), **~1.2 GB** (active) | 2.0 GB | More capable responses, fallback for complex tasks | ⚡️ Medium |
+| `ollama/phi:2.7b` | ~120 MB (idle), **~900 MB** (active) | 1.6 GB | Balanced alternative, good reasoning | ⚡️ Medium |
+
+**Note:** Heartbeat requests are simple ("Are you alive?"), so **tinyllama is more than sufficient** and saves ~600 MB on your host. Both models remain installed — switch anytime by editing `openclaw.json` and restarting.
 
 ---
 
@@ -150,8 +162,9 @@ nano openclaw/workspace/USER.md
 # Start the full stack
 docker compose up -d
 
-# Pull the local Ollama model (first time only, ~2 GB)
-docker exec ollama ollama pull llama3.2:3b
+# Pull the local Ollama models (first time only)
+docker exec ollama ollama pull tinyllama:1.1b      # Default heartbeat model (~637 MB)
+docker exec ollama ollama pull llama3.2:3b         # Optional: for more complex tasks (~2 GB)
 ```
 
 Wait 1–2 minutes for all services to start, then visit:
@@ -207,7 +220,7 @@ clawbot/
 | `/opt/openclaw/config/` | OpenClaw config, session transcripts, logs |
 | `/opt/openclaw/workspace/` | SOUL.md, USER.md, memory files |
 | Docker volume `authelia-data` | Authelia SQLite DB |
-| Docker volume `ollama-data` | Ollama model weights (~2 GB) |
+| Docker volume `ollama-data` | Ollama model weights (tinyllama ~637 MB, optional llama3.2:3b ~2 GB) |
 | Docker volume `traefik-certs` | Let's Encrypt certificates |
 | Docker volume `traefik-logs` | Traefik access & error logs |
 
