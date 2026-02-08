@@ -31,5 +31,9 @@ Thumbs.db
 .vscode/
 .idea/
 
-# OpenClaw workspace
+# OpenClaw workspace — runtime-generated files (keep skills + templates in git)
+openclaw/workspace/memory/
+openclaw/workspace/.clawhub/
+openclaw/workspace/IDENTITY.md
+openclaw/workspace/USER.md
 openclaw/workspace/

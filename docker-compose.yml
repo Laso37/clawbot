@@ -85,7 +85,7 @@ services:
       OPENCLAW_GATEWAY_BIND: lan
     volumes:
       - ${OPENCLAW_CONFIG_DIR:-/opt/openclaw/config}:/home/node/.openclaw
-      - ${OPENCLAW_WORKSPACE_DIR:-/opt/openclaw/workspace}:/home/node/.openclaw/workspace
+      - ${OPENCLAW_WORKSPACE_DIR:-./openclaw/workspace}:/home/node/.openclaw/workspace
     networks:
       - clawbot_net
     depends_on:
