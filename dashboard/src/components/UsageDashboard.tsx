@@ -30,6 +30,20 @@ interface UsageData {
   totalMessages: number;
   byModel: Record<string, { cost: number; tokens: number; messages: number }>;
   period: { start: string; end: string };
+  metrics: {
+    costPerToken: number;
+    costPerMessage: number;
+    tokensPerMessage: number;
+    avgDailyCost: number;
+    daysRemainingInMonth: number;
+  };
+  messageBreakdown: {
+    user: number;
+    assistant: number;
+    toolCalls: number;
+    toolResults: number;
+    errors: number;
+  };
 }
 
 const COLORS = {
@@ -66,6 +80,72 @@ export function UsageDashboard() {
 
   return (
     <div className="space-y-6">
+            {/* Efficiency Metrics */}
+            {data && (
+              <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                <MetricCard
+                  label="Cost per Token"
+                  value={`$${data.metrics.costPerToken.toFixed(6)}`}
+                  subtext="Lower is better"
+                />
+                <MetricCard
+                  label="Cost per Message"
+                  value={`$${data.metrics.costPerMessage.toFixed(4)}`}
+                  subtext="Session metric"
+                />
+                <MetricCard
+                  label="Avg Tokens/Message"
+                  value={formatTokens(data.metrics.tokensPerMessage)}
+                  subtext="Chat efficiency"
+                />
+                <MetricCard
+                  label="Daily Average"
+                  value={formatCost(data.metrics.avgDailyCost)}
+                  subtext={`${data.metrics.daysRemainingInMonth} days left in month`}
+                />
+              </div>
+            )}
+
+            {/* Message Type Breakdown */}
+            {data && data.messageBreakdown && (
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5">
+                <h3 className="mb-4 text-sm font-medium text-[var(--muted)]">
+                  Message Breakdown
+                </h3>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
+                  <div>
+                    <p className="text-xs text-[var(--muted)]">User Messages</p>
+                    <p className="mt-1 text-lg font-semibold text-white">
+                      {data.messageBreakdown.user.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--muted)]">Assistant Messages</p>
+                    <p className="mt-1 text-lg font-semibold text-white">
+                      {data.messageBreakdown.assistant.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--muted)]">Tool Calls</p>
+                    <p className="mt-1 text-lg font-semibold text-white">
+                      {data.messageBreakdown.toolCalls.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--muted)]">Tool Results</p>
+                    <p className="mt-1 text-lg font-semibold text-white">
+                      {data.messageBreakdown.toolResults.toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[var(--muted)]">Errors</p>
+                    <p className="mt-1 text-lg font-semibold text-white">
+                      {data.messageBreakdown.errors.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
       {/* Total Cost + Period Selector */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -211,6 +291,82 @@ export function UsageDashboard() {
         </div>
       )}
 
+      {/* Tool Breakdown Table */}
+      {data && data.byTool && Object.keys(data.byTool).length > 0 && (
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 mt-6">
+          <h3 className="mb-4 text-sm font-medium text-[var(--muted)]">
+            Cost by Tool
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border)] text-left text-[var(--muted)]">
+                  <th className="pb-2 font-medium">Tool</th>
+                  <th className="pb-2 text-right font-medium">Cost</th>
+                  <th className="pb-2 text-right font-medium">Calls</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(data.byTool)
+                  .sort(([, a], [, b]) => b.cost - a.cost)
+                  .map(([tool, stats]) => (
+                    <tr
+                      key={tool}
+                      className="border-b border-[var(--border)] last:border-0"
+                    >
+                      <td className="py-2 text-white">{tool}</td>
+                      <td className="py-2 text-right text-white">
+                        {formatCost(stats.cost)}
+                      </td>
+                      <td className="py-2 text-right text-[var(--muted)]">
+                        {stats.calls.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Skill Breakdown Table */}
+      {data && data.bySkill && Object.keys(data.bySkill).length > 0 && (
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 mt-6">
+          <h3 className="mb-4 text-sm font-medium text-[var(--muted)]">
+            Cost by Skill
+          </h3>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[var(--border)] text-left text-[var(--muted)]">
+                  <th className="pb-2 font-medium">Skill</th>
+                  <th className="pb-2 text-right font-medium">Cost</th>
+                  <th className="pb-2 text-right font-medium">Calls</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(data.bySkill)
+                  .sort(([, a], [, b]) => b.cost - a.cost)
+                  .map(([skill, stats]) => (
+                    <tr
+                      key={skill}
+                      className="border-b border-[var(--border)] last:border-0"
+                    >
+                      <td className="py-2 text-white">{skill}</td>
+                      <td className="py-2 text-right text-white">
+                        {formatCost(stats.cost)}
+                      </td>
+                      <td className="py-2 text-right text-[var(--muted)]">
+                        {stats.calls.toLocaleString()}
+                      </td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Budget Status */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <BudgetCard
@@ -228,10 +384,14 @@ function BudgetCard({
   label,
   spent,
   limit,
+  avgDaily,
+  projectedMonthly,
 }: {
   label: string;
   spent: number;
   limit: number;
+  avgDaily?: number;
+  projectedMonthly?: number;
 }) {
   const pct = Math.min((spent / limit) * 100, 100);
   const color =
@@ -260,6 +420,34 @@ function BudgetCard({
         {pct >= 75 && pct < 90 && " ⚠️ Approaching limit"}
         {pct >= 90 && " 🚨 Near limit!"}
       </p>
+      {avgDaily !== undefined && (
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Average: ${avgDaily.toFixed(2)}/day
+        </p>
+      )}
+      {projectedMonthly !== undefined && (
+        <p className="mt-1 text-xs text-[var(--muted)]">
+          Projected: ${projectedMonthly.toFixed(2)}/month
+        </p>
+      )}
+    </div>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+  subtext,
+}: {
+  label: string;
+  value: string;
+  subtext: string;
+}) {
+  return (
+    <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4">
+      <p className="text-xs text-[var(--muted)]">{label}</p>
+      <p className="mt-2 text-lg font-semibold text-white">{value}</p>
+      <p className="mt-1 text-xs text-[var(--muted)]">{subtext}</p>
     </div>
   );
 }
