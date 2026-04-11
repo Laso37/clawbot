@@ -29,6 +29,8 @@ interface UsageData {
   totalTokens: number;
   totalMessages: number;
   byModel: Record<string, { cost: number; tokens: number; messages: number }>;
+  byTool?: Record<string, { cost: number; calls: number }>;
+  bySkill?: Record<string, { cost: number; calls: number }>;
   period: { start: string; end: string };
   metrics: {
     costPerToken: number;
@@ -60,7 +62,7 @@ export function UsageDashboard() {
 
   useEffect(() => {
     setLoading(true);
-    fetch(`/api/usage?days=${days}`)
+    fetch(`/clawbot/api/usage?days=${days}`)
       .then((r) => r.json())
       .then((d) => {
         setData(d);

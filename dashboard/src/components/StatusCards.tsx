@@ -21,12 +21,12 @@ export function StatusCards({ openClawUrl }: { openClawUrl: string }) {
   const [config, setConfig] = useState<ConfigData | null>(null);
 
   useEffect(() => {
-    fetch("/api/health")
+    fetch("/clawbot/api/health")
       .then((r) => r.json())
       .then(setHealth)
       .catch(() => setHealth({ openclaw: "offline" }));
 
-    fetch("/api/config")
+    fetch("/clawbot/api/config")
       .then((r) => r.json())
       .then(setConfig)
       .catch(() =>

@@ -1,73 +1,14 @@
 # =============================================================================
-# ClawBot — Docker Compose Stack
+# ClawBot — Project stack
 # =============================================================================
-# Traefik (reverse proxy + HTTPS) → Authelia (auth) → OpenClaw + Dashboard
-# Ollama provides free local heartbeats for OpenClaw
+# Attaches to the shared `edge_net` network provided by /root/projects/platform.
+# Traefik + Authelia live in platform/. This file only defines clawbot's
+# own services and their routing labels.
+#
+# Start order: `cd ../platform && docker compose up -d` first, then this stack.
 # =============================================================================
 
 services:
-  # ---------------------------------------------------------------------------
-  # Traefik — Reverse Proxy + Auto HTTPS
-  # ---------------------------------------------------------------------------
-  traefik:
-    image: traefik:v3.6
-    container_name: traefik
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./traefik/dynamic:/etc/traefik/dynamic:ro
-      - traefik-certs:/letsencrypt
-      - traefik-logs:/var/log/traefik
-    command:
-      - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}"
-    networks:
-      clawbot_net:
-        ipv4_address: 172.28.0.10
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.robots.rule=Host(`${DOMAIN}`) && Path(`/robots.txt`)"
-      - "traefik.http.routers.robots.entrypoints=websecure"
-      - "traefik.http.routers.robots.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.robots.service=robots-svc"
-      - "traefik.http.services.robots-svc.loadbalancer.server.port=8080"
-
-  # ---------------------------------------------------------------------------
-  # Authelia — Single-User Authentication Gateway
-  # ---------------------------------------------------------------------------
-  authelia:
-    image: authelia/authelia:latest
-    container_name: authelia
-    restart: unless-stopped
-    command:
-      - "authelia"
-      - "--config"
-      - "/config/configuration.yml"
-      - "--config.experimental.filters"
-      - "expand-env"
-    volumes:
-      - ./authelia/configuration.yml:/config/configuration.yml:ro
-      - ./authelia/users.yml:/config/users.yml
-      - authelia-data:/data
-    environment:
-      DOMAIN: ${DOMAIN}
-      AUTHELIA_IDENTITY_VALIDATION_RESET_PASSWORD_JWT_SECRET: ${AUTHELIA_JWT_SECRET}
-      AUTHELIA_SESSION_SECRET: ${AUTHELIA_SESSION_SECRET}
-      AUTHELIA_STORAGE_ENCRYPTION_KEY: ${AUTHELIA_STORAGE_ENCRYPTION_KEY}
-    networks:
-      - clawbot_net
-    labels:
-      - "traefik.enable=true"
-      # Authelia portal route
-      - "traefik.http.routers.authelia.rule=Host(`${DOMAIN}`) && PathPrefix(`/authelia`)"
-      - "traefik.http.routers.authelia.entrypoints=websecure"
-      - "traefik.http.routers.authelia.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.authelia.middlewares=noindex-headers@file"
-      - "traefik.http.services.authelia.loadbalancer.server.port=9091"
-
   # ---------------------------------------------------------------------------
   # OpenClaw Gateway — AI Assistant
   # ---------------------------------------------------------------------------
@@ -86,16 +27,20 @@ services:
     volumes:
       - ${OPENCLAW_CONFIG_DIR:-./openclaw/config}:/home/node/.openclaw
     networks:
-      - clawbot_net
+      - edge_net
     depends_on:
       - ollama
     labels:
       - "traefik.enable=true"
+      # --- Clawbot-local middleware: strip /openclaw prefix ---
+      - "traefik.http.middlewares.openclaw-strip.stripprefix.prefixes=/openclaw"
+      - "traefik.http.middlewares.openclaw-chain.chain.middlewares=noindex-headers@file,security-headers@file,rate-limit@file,authelia@file,openclaw-strip"
       # --- HTTP router: WebUI + API behind auth, strip /openclaw prefix ---
       - "traefik.http.routers.openclaw.rule=Host(`${DOMAIN}`) && PathPrefix(`/openclaw`)"
       - "traefik.http.routers.openclaw.entrypoints=websecure"
       - "traefik.http.routers.openclaw.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.openclaw.middlewares=openclaw-chain@file"
+      - "traefik.http.routers.openclaw.middlewares=openclaw-chain"
+      - "traefik.http.routers.openclaw.priority=50"
       # --- WebSocket router: UI connects to wss://host/ (root path) ---
       - "traefik.http.routers.openclaw-ws.rule=Host(`${DOMAIN}`) && HeaderRegexp(`Connection`, `(?i)upgrade`) && HeaderRegexp(`Upgrade`, `(?i)websocket`)"
       - "traefik.http.routers.openclaw-ws.entrypoints=websecure"
@@ -106,7 +51,7 @@ services:
       - "traefik.http.services.openclaw.loadbalancer.server.port=18789"
 
   # ---------------------------------------------------------------------------
-  # Dashboard — Next.js Overview Board
+  # Dashboard — Next.js Overview Board (OpenClaw metrics)
   # ---------------------------------------------------------------------------
   dashboard:
     build:
@@ -121,18 +66,19 @@ services:
     volumes:
       - ${OPENCLAW_CONFIG_DIR:-./openclaw/config}:/home/node/.openclaw:ro
     networks:
-      - clawbot_net
+      - edge_net
     depends_on:
       - openclaw-gateway
     labels:
       - "traefik.enable=true"
-      # Dashboard as root route — behind auth
-      - "traefik.http.routers.dashboard.rule=Host(`${DOMAIN}`) && !PathPrefix(`/openclaw`) && !PathPrefix(`/authelia`) && !Path(`/robots.txt`)"
-      - "traefik.http.routers.dashboard.entrypoints=websecure"
-      - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.dashboard.middlewares=default-chain@file"
-      - "traefik.http.routers.dashboard.priority=1"
-      - "traefik.http.services.dashboard.loadbalancer.server.port=3000"
+      # Dashboard mounted at /clawbot — Next.js handles basePath natively,
+      # so no stripPrefix; assets load from /clawbot/_next/*.
+      - "traefik.http.routers.clawbot-dashboard.rule=Host(`${DOMAIN}`) && PathPrefix(`/clawbot`)"
+      - "traefik.http.routers.clawbot-dashboard.entrypoints=websecure"
+      - "traefik.http.routers.clawbot-dashboard.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.clawbot-dashboard.middlewares=default-chain@file"
+      - "traefik.http.routers.clawbot-dashboard.priority=50"
+      - "traefik.http.services.clawbot-dashboard.loadbalancer.server.port=3000"
 
   # ---------------------------------------------------------------------------
   # Ollama — Local LLM for Free Heartbeats
@@ -144,29 +90,19 @@ services:
     volumes:
       - ollama-data:/root/.ollama
     networks:
-      - clawbot_net
-    # No ports exposed to host — only accessible within Docker network
+      - edge_net
 
 # =============================================================================
 # Volumes — persistent data stored outside the repo
 # =============================================================================
 volumes:
-  traefik-certs:
-    driver: local
-  traefik-logs:
-    driver: local
-  authelia-data:
-    driver: local
   ollama-data:
     driver: local
 
 # =============================================================================
-# Network
+# Network — joins the shared edge network created by platform/
 # =============================================================================
 networks:
-  clawbot_net:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.28.0.0/24
-          gateway: 172.28.0.1
+  edge_net:
+    external: true
+    name: edge_net
