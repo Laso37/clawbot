@@ -9,11 +9,11 @@
 
 **Your personal AI assistant, self-hosted on a VPS for ~$30–50/month instead of $1,500+.**
 
-ClawBot is a production-ready deployment of [OpenClaw](https://github.com/openclaw/openclaw) — a powerful AI agent platform — plus a custom **Next.js dashboard** for monitoring usage, costs, and model routing in real time. It runs behind the shared **[platform](../platform)** edge stack, which provides Traefik (auto-HTTPS) and Authelia (single-user auth) for all self-hosted projects on the host.
+ClawBot is a production-ready deployment of [OpenClaw](https://github.com/openclaw/openclaw) — a powerful AI agent platform — plus a custom **Next.js dashboard** for monitoring usage, costs, and model routing in real time. It runs behind the shared **[auth-portal](../auth-portal)** edge stack, which provides Traefik (auto-HTTPS), Authelia (single-user auth), and a project launcher for all self-hosted projects on the host.
 
-> **Start order:** bring up `../platform` first (`cd ../platform && docker compose up -d`), then this stack (`docker compose up -d`). Clawbot attaches to the shared `edge_net` network created by platform.
+> **Start order:** bring up `../auth-portal` first (`cd ../auth-portal && docker compose up -d`), then this stack (`docker compose up -d`). Clawbot attaches to the shared `edge_net` network created by auth-portal.
 >
-> Once running, the ClawBot dashboard lives at `https://${DOMAIN}/clawbot` and OpenClaw at `https://${DOMAIN}/openclaw`. The root `/` is served by the platform launcher.
+> Once running, the ClawBot dashboard lives at `https://${DOMAIN}/clawbot` and OpenClaw at `https://${DOMAIN}/openclaw`. The root `/` is served by the auth-portal launcher.
 
 <p align="center">
   <img src="docs/clawbot_dashboard.png" alt="ClawBot Dashboard" width="800" />

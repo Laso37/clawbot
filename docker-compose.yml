@@ -1,11 +1,11 @@
 # =============================================================================
 # ClawBot — Project stack
 # =============================================================================
-# Attaches to the shared `edge_net` network provided by /root/projects/platform.
-# Traefik + Authelia live in platform/. This file only defines clawbot's
+# Attaches to the shared `edge_net` network provided by /root/projects/auth-portal.
+# Traefik + Authelia live in auth-portal/. This file only defines clawbot's
 # own services and their routing labels.
 #
-# Start order: `cd ../platform && docker compose up -d` first, then this stack.
+# Start order: `cd ../auth-portal && docker compose up -d` first, then this stack.
 # =============================================================================
 
 services:
@@ -100,7 +100,7 @@ volumes:
     driver: local
 
 # =============================================================================
-# Network — joins the shared edge network created by platform/
+# Network — joins the shared edge network created by auth-portal/
 # =============================================================================
 networks:
   edge_net:
